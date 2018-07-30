@@ -1,6 +1,10 @@
 package com.example.dong.demoplacedetectionapi;
 
+import android.content.Context;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.wifi.WifiManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -16,9 +20,13 @@ import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.PlaceFilter;
 import com.google.android.gms.location.places.PlaceLikelihood;
 import com.google.android.gms.location.places.PlaceLikelihoodBuffer;
 import com.google.android.gms.location.places.Places;
+
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener {
@@ -27,7 +35,10 @@ public class MainActivity extends AppCompatActivity implements
     private GoogleApiClient mGoogleApiClient;
     private static final int PERMISSION_REQUEST_CODE = 100;
     private TextView tvName,tvLikelihood;
-
+    private CharSequence type;
+    private String address;
+    private int type_code;
+//    PlaceLikelihood placeLikelihood;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -56,8 +67,31 @@ public class MainActivity extends AppCompatActivity implements
                 }
             }
         });
-    }
 
+        if (isNetworkConnected()) {
+            if (ContextCompat.checkSelfPermission(MainActivity.this,
+                    Manifest.permission.ACCESS_FINE_LOCATION)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(MainActivity.this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                        PERMISSION_REQUEST_CODE);
+            } else {
+                callPlaceDetectionApi();
+//                Toast.makeText(this,"TY"+type_code+"name:"+type,Toast.LENGTH_SHORT).show();
+            }
+
+        }
+
+        NetworkChangeReceiver receiver = new NetworkChangeReceiver();
+        final IntentFilter filter = new IntentFilter("android.net.conn.CONNECTIVITY_CHANGE");
+        registerReceiver(receiver, filter);
+
+    }
+    public boolean isNetworkConnected() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        return cm.getActiveNetworkInfo() != null;
+    }
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
         Log.e(LOG_TAG, "Google Places API connection failed with error code: "
@@ -82,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void callPlaceDetectionApi() {
+    public void callPlaceDetectionApi() {
 
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
@@ -94,6 +128,8 @@ public class MainActivity extends AppCompatActivity implements
                 // for ActivityCompat#requestPermissions for more details.
                 return;
             }
+
+
             PendingResult<PlaceLikelihoodBuffer> result = Places.PlaceDetectionApi
                     .getCurrentPlace(mGoogleApiClient, null);
             result.setResultCallback(new ResultCallback<PlaceLikelihoodBuffer>() {
@@ -104,13 +140,18 @@ public class MainActivity extends AppCompatActivity implements
                                         "likelihood: %g",
                                 placeLikelihood.getPlace().getName(),
                                 placeLikelihood.getLikelihood()));
+                        Log.i("TYPE",placeLikelihood.getPlace().getPlaceTypes().get(0).toString());
                     }
-                    PlaceLikelihood placeLikelihood = likelyPlaces.get(1);
-                    tvName.setText("Nơi có nhiều khả năng nhất:"+placeLikelihood.getPlace().getName()
+                    PlaceLikelihood placeLikelihood = likelyPlaces.get(0);
+                    type_code=placeLikelihood.getPlace().getPlaceTypes().get(0);
+                    type=placeLikelihood.getPlace().getName();
+                    tvName.setText("Nơi có nhiều khả năng nhất:"+type
+                            + "\nLoai khu vực:"+ type_code
                             + "\nĐịa chỉ:"+ placeLikelihood.getPlace().getAddress()
                             +"\nSDT:"+placeLikelihood.getPlace().getPhoneNumber()
                     +"\nwebsite:"+placeLikelihood.getPlace().getWebsiteUri());
                     tvLikelihood.setText("Phần trăm thay đổi ở đó:"+String.valueOf(placeLikelihood.getLikelihood()));
+                    Toast.makeText(MainActivity.this,"TYPE:"+type_code+"\n Name:"+type,Toast.LENGTH_SHORT).show();
                     likelyPlaces.release();
                 }
             });

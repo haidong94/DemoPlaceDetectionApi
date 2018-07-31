@@ -1,6 +1,8 @@
 package com.example.dong.demoplacedetectionapi;
 
+import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
@@ -38,6 +40,8 @@ public class MainActivity extends AppCompatActivity implements
     private CharSequence type;
     private String address;
     private int type_code;
+
+
 //    PlaceLikelihood placeLikelihood;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +72,7 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
 
+
         if (isNetworkConnected()) {
             if (ContextCompat.checkSelfPermission(MainActivity.this,
                     Manifest.permission.ACCESS_FINE_LOCATION)
@@ -87,6 +92,9 @@ public class MainActivity extends AppCompatActivity implements
         registerReceiver(receiver, filter);
 
     }
+
+
+
     public boolean isNetworkConnected() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
